@@ -34,63 +34,127 @@
       text-align: center; 
       border: 2px solid #233f6e; 
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transition: all 0.3s ease;
     }
     
     .queue-name { font-size: 18px; color: #8892b0; margin-bottom: 15px; font-weight: bold;}
-    .ticket { font-size: 90px; font-weight: 800; color: #34d399; margin: 0; line-height: 1; text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);}
+    .ticket { font-size: 90px; font-weight: 800; color: #34d399; margin: 0; line-height: 1; transition: color 0.3s ease;}
     
-    .pulse { animation: pulse-animation 2s infinite; }
-    @keyframes pulse-animation {
-      0% { text-shadow: 0 0 10px rgba(52, 211, 153, 0.2); }
-      50% { text-shadow: 0 0 30px rgba(52, 211, 153, 0.6); }
-      100% { text-shadow: 0 0 10px rgba(52, 211, 153, 0.2); }
+    /* Нова анімація блимання на 60 секунд */
+    .active-blink {
+      animation: flash-animation 1s infinite;
+      color: #fcd34d !important; /* Жовтий колір при виклику */
+    }
+    
+    @keyframes flash-animation {
+      0%, 100% { opacity: 1; text-shadow: 0 0 40px rgba(252, 211, 77, 0.9); transform: scale(1.05); }
+      50% { opacity: 0.4; text-shadow: 0 0 10px rgba(252, 211, 77, 0.2); transform: scale(1); }
+    }
+
+    /* Стартовий екран для дозволу на звук */
+    #start-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: #0b1325; z-index: 9999;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    
+    .start-btn {
+      background-color: #0ea5e9; color: white; border: none;
+      padding: 20px 40px; font-size: 22px; border-radius: 15px;
+      font-weight: bold; cursor: pointer;
     }
   </style>
 </head>
 <body>
+
+  <!-- Системний звук (використовуємо стандартний файл сповіщення) -->
+  <audio id="bell-sound" src="https://actions.google.com/sounds/v1/alarms/dinner_bell.ogg" preload="auto"></audio>
+
+  <!-- Екран розблокування -->
+  <div id="start-overlay">
+    <h2 style="color: #e2e8f0; margin-bottom: 30px;">Табло готове до роботи</h2>
+    <button class="start-btn" onclick="startDashboard()">▶ Запустити екран</button>
+    <p style="color: #64748b; margin-top: 20px;">Натисніть кнопку, щоб надати системі дозвіл на відтворення звуку</p>
+  </div>
 
   <h1>ЗАРАЗ ПРИЙМАЮТЬ</h1>
   
   <div class="grid">
     <div class="card">
       <div class="queue-name">D1 та D2 (Черга A)</div>
-      <div class="ticket pulse" id="val-A">—</div>
+      <div class="ticket" id="val-A">—</div>
     </div>
     <div class="card">
       <div class="queue-name">D3 Менеджмент (Черга B)</div>
-      <div class="ticket pulse" id="val-B">—</div>
+      <div class="ticket" id="val-B">—</div>
     </div>
     <div class="card">
       <div class="queue-name">D3 Управління та цифрове (Черга C)</div>
-      <div class="ticket pulse" id="val-C">—</div>
+      <div class="ticket" id="val-C">—</div>
     </div>
     <div class="card">
       <div class="queue-name">D7 та I10 (Черга D)</div>
-      <div class="ticket pulse" id="val-D">—</div>
+      <div class="ticket" id="val-D">—</div>
     </div>
   </div>
 
   <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxANxP7nvWMhi_2rQ6_z9cUvH34PBwsHAtsC4EN39izF4cO3_cvuoF1hMrvULS0FCGf/exec"; 
     
+    // Словник для збереження попередніх станів
+    let previousData = { A: "", B: "", C: "", D: "" };
+    let isFirstLoad = true;
+
+    // Ініціалізація табло та розблокування звуку
+    function startDashboard() {
+      document.getElementById("start-overlay").style.display = "none";
+      
+      // Тихий запуск аудіо для зняття блокування Safari
+      let bell = document.getElementById("bell-sound");
+      bell.play().catch(e => console.log(e));
+      setTimeout(() => { bell.pause(); bell.currentTime = 0; }, 100);
+
+      // Одразу завантажуємо дані і запускаємо таймер
+      fetchDashboardData();
+      setInterval(fetchDashboardData, 4000);
+    }
+
     function fetchDashboardData() {
-      // Робимо GET-запит до нашого API, додаючи параметр action=getDashboard
       fetch(WEB_APP_URL + "?action=getDashboard")
         .then(response => response.json())
         .then(data => {
-          document.getElementById("val-A").innerText = data.A || "—";
-          document.getElementById("val-B").innerText = data.B || "—";
-          document.getElementById("val-C").innerText = data.C || "—";
-          document.getElementById("val-D").innerText = data.D || "—";
+          updateSlot('A', data.A);
+          updateSlot('B', data.B);
+          updateSlot('C', data.C);
+          updateSlot('D', data.D);
+          isFirstLoad = false;
         })
-        .catch(error => console.log("Помилка завантаження даних:", error));
+        .catch(error => console.log("Помилка завантаження:", error));
     }
 
-    // Запускаємо опитування сервера кожні 4 секунди
-    setInterval(fetchDashboardData, 4000);
-    
-    // Перший запуск одразу при відкритті
-    fetchDashboardData();
+    function updateSlot(queueId, newValue) {
+      let el = document.getElementById("val-" + queueId);
+      
+      // Перевіряємо, чи змінився номер, і чи це не перше завантаження
+      if (!isFirstLoad && previousData[queueId] !== newValue && newValue !== "—") {
+        
+        // Відтворюємо звук
+        let bell = document.getElementById("bell-sound");
+        bell.currentTime = 0; 
+        bell.play().catch(e => console.log("Не вдалося відтворити звук", e));
+        
+        // Вмикаємо блимання
+        el.classList.add("active-blink");
+        
+        // Таймер на вимкнення блимання рівно через 60 секунд (60000 мілісекунд)
+        setTimeout(() => {
+          el.classList.remove("active-blink");
+        }, 60000);
+      }
+      
+      el.innerText = newValue || "—";
+      previousData[queueId] = newValue;
+    }
   </script>
 
 </body>
