@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Табло черги - Ауд. 115</title>
+  <style>
+    body { 
+      background-color: #0b1325; 
+      color: #e2e8f0; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      height: 100vh; 
+      margin: 0; 
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    h1 { color: #38bdf8; font-size: 36px; margin-top: 10px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px;}
+    
+    .grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 20px; 
+      width: 100%; 
+      max-width: 900px; 
+    }
+    
+    .card { 
+      background-color: #112240; 
+      border-radius: 20px; 
+      padding: 30px; 
+      text-align: center; 
+      border: 2px solid #233f6e; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    
+    .queue-name { font-size: 18px; color: #8892b0; margin-bottom: 15px; font-weight: bold;}
+    .ticket { font-size: 90px; font-weight: 800; color: #34d399; margin: 0; line-height: 1; text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);}
+    
+    .pulse { animation: pulse-animation 2s infinite; }
+    @keyframes pulse-animation {
+      0% { text-shadow: 0 0 10px rgba(52, 211, 153, 0.2); }
+      50% { text-shadow: 0 0 30px rgba(52, 211, 153, 0.6); }
+      100% { text-shadow: 0 0 10px rgba(52, 211, 153, 0.2); }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ЗАРАЗ ПРИЙМАЮТЬ</h1>
+  
+  <div class="grid">
+    <div class="card">
+      <div class="queue-name">D1 та D2 (Черга A)</div>
+      <div class="ticket pulse" id="val-A">—</div>
+    </div>
+    <div class="card">
+      <div class="queue-name">D3 Менеджмент (Черга B)</div>
+      <div class="ticket pulse" id="val-B">—</div>
+    </div>
+    <div class="card">
+      <div class="queue-name">D3 Управління та цифрове (Черга C)</div>
+      <div class="ticket pulse" id="val-C">—</div>
+    </div>
+    <div class="card">
+      <div class="queue-name">D7 та I10 (Черга D)</div>
+      <div class="ticket pulse" id="val-D">—</div>
+    </div>
+  </div>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxANxP7nvWMhi_2rQ6_z9cUvH34PBwsHAtsC4EN39izF4cO3_cvuoF1hMrvULS0FCGf/exec"; 
+    
+    function fetchDashboardData() {
+      // Робимо GET-запит до нашого API, додаючи параметр action=getDashboard
+      fetch(WEB_APP_URL + "?action=getDashboard")
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("val-A").innerText = data.A || "—";
+          document.getElementById("val-B").innerText = data.B || "—";
+          document.getElementById("val-C").innerText = data.C || "—";
+          document.getElementById("val-D").innerText = data.D || "—";
+        })
+        .catch(error => console.log("Помилка завантаження даних:", error));
+    }
+
+    // Запускаємо опитування сервера кожні 4 секунди
+    setInterval(fetchDashboardData, 4000);
+    
+    // Перший запуск одразу при відкритті
+    fetchDashboardData();
+  </script>
+
+</body>
+</html>
