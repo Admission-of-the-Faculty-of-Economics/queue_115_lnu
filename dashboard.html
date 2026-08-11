@@ -40,15 +40,28 @@
     .queue-name { font-size: 18px; color: #8892b0; margin-bottom: 15px; font-weight: bold;}
     .ticket { font-size: 90px; font-weight: 800; color: #34d399; margin: 0; line-height: 1; transition: color 0.3s ease;}
     
-    /* Нова анімація блимання на 60 секунд */
-    .active-blink {
-      animation: flash-animation 1s infinite;
-      color: #fcd34d !important; /* Жовтий колір при виклику */
+    /* Анімація блимання для ВСІЄЇ картки */
+    .active-blink-card {
+      animation: flash-card 1s infinite;
+      border-color: #fbbf24 !important; 
     }
     
-    @keyframes flash-animation {
-      0%, 100% { opacity: 1; text-shadow: 0 0 40px rgba(252, 211, 77, 0.9); transform: scale(1.05); }
-      50% { opacity: 0.4; text-shadow: 0 0 10px rgba(252, 211, 77, 0.2); transform: scale(1); }
+    @keyframes flash-card {
+      0%, 100% { 
+        background-color: #112240; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        transform: scale(1); 
+      }
+      50% { 
+        background-color: #1e293b; /* Трохи світліший фон */
+        box-shadow: 0 0 50px rgba(252, 211, 77, 0.4); /* Жовте світіння навколо */
+        transform: scale(1.05); /* Картка "вистрибує" вперед */
+      }
+    }
+
+    /* Колір тексту всередині активної картки */
+    .active-blink-card .ticket {
+      color: #fcd34d !important;
     }
 
     /* Стартовий екран для дозволу на звук */
@@ -67,7 +80,7 @@
 </head>
 <body>
 
-  <!-- Системний звук (використовуємо стандартний файл сповіщення) -->
+  <!-- Системний звук -->
   <audio id="bell-sound" src="https://actions.google.com/sounds/v1/alarms/dinner_bell.ogg" preload="auto"></audio>
 
   <!-- Екран розблокування -->
@@ -80,41 +93,38 @@
   <h1>ЗАРАЗ ПРИЙМАЮТЬ</h1>
   
   <div class="grid">
-    <div class="card">
-      <div class="queue-name">D1 та D2 (Черга A)</div>
+    <div class="card" id="card-A">
+      <div class="queue-name">Облік / Фінанси</div>
       <div class="ticket" id="val-A">—</div>
     </div>
-    <div class="card">
-      <div class="queue-name">D3 Менеджмент (Черга B)</div>
+    <div class="card" id="card-B">
+      <div class="queue-name">Менеджмент</div>
       <div class="ticket" id="val-B">—</div>
     </div>
-    <div class="card">
-      <div class="queue-name">D3 Управління та цифрове (Черга C)</div>
+    <div class="card" id="card-C">
+      <div class="queue-name">Управління та цифрове</div>
       <div class="ticket" id="val-C">—</div>
     </div>
-    <div class="card">
-      <div class="queue-name">D7 та I10 (Черга D)</div>
+    <div class="card" id="card-D">
+      <div class="queue-name">Логістика / Соціальне забезпечення</div>
       <div class="ticket" id="val-D">—</div>
     </div>
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxANxP7nvWMhi_2rQ6_z9cUvH34PBwsHAtsC4EN39izF4cO3_cvuoF1hMrvULS0FCGf/exec"; 
+    // ВСТАВ СВОЄ ПОСИЛАННЯ СЮДИ ↓
+    const WEB_APP_URL = "ТВОЄ_НОВЕ_ПОСИЛАННЯ_З_РОЗГОРТАННЯ"; 
     
-    // Словник для збереження попередніх станів
     let previousData = { A: "", B: "", C: "", D: "" };
     let isFirstLoad = true;
 
-    // Ініціалізація табло та розблокування звуку
     function startDashboard() {
       document.getElementById("start-overlay").style.display = "none";
       
-      // Тихий запуск аудіо для зняття блокування Safari
       let bell = document.getElementById("bell-sound");
       bell.play().catch(e => console.log(e));
       setTimeout(() => { bell.pause(); bell.currentTime = 0; }, 100);
 
-      // Одразу завантажуємо дані і запускаємо таймер
       fetchDashboardData();
       setInterval(fetchDashboardData, 4000);
     }
@@ -134,21 +144,20 @@
 
     function updateSlot(queueId, newValue) {
       let el = document.getElementById("val-" + queueId);
+      let cardEl = document.getElementById("card-" + queueId); // Отримуємо саму картку
       
-      // Перевіряємо, чи змінився номер, і чи це не перше завантаження
       if (!isFirstLoad && previousData[queueId] !== newValue && newValue !== "—") {
         
-        // Відтворюємо звук
         let bell = document.getElementById("bell-sound");
         bell.currentTime = 0; 
         bell.play().catch(e => console.log("Не вдалося відтворити звук", e));
         
-        // Вмикаємо блимання
-        el.classList.add("active-blink");
+        // Додаємо анімацію до всієї картки
+        cardEl.classList.add("active-blink-card");
         
-        // Таймер на вимкнення блимання рівно через 60 секунд (60000 мілісекунд)
+        // Вимикаємо через 60 секунд
         setTimeout(() => {
-          el.classList.remove("active-blink");
+          cardEl.classList.remove("active-blink-card");
         }, 60000);
       }
       
